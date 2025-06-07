@@ -11,7 +11,7 @@ const api = axios.create({
 
 export const submitContactForm = async (formData) => {
     try {
-        const response = await api.post('/contact', formData);
+        const response = await api.post('/contact/submit', formData);
         return response.data;
     } catch (error) {
         if (error.response?.data) {

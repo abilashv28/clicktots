@@ -1,11 +1,12 @@
 const nodemailer = require('nodemailer');
 
 const sendEmail = async (contactData) => {
-    // Create a transporter
+    if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
+        console.error('Email configuration is missing. Please check your .env file.');
+        return;
+    }    // Create a transporter
     const transporter = nodemailer.createTransport({
-        host: process.env.EMAIL_HOST,
-        port: process.env.EMAIL_PORT,
-        secure: true,
+        service: 'gmail',
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
@@ -25,14 +26,23 @@ const sendEmail = async (contactData) => {
             <p>${contactData.message}</p>
             <p><strong>Timestamp:</strong> ${new Date(contactData.timestamp).toLocaleString()}</p>
         `
-    };
-
-    try {
-        await transporter.sendMail(mailOptions);
+    };    try {
+        // Verify SMTP connection configuration
+        await transporter.verify();
+        
+        // Send email
+        const info = await transporter.sendMail(mailOptions);
         console.log('Email notification sent successfully');
+        console.log('Message ID:', info.messageId);
+        return true;
     } catch (error) {
-        console.error('Error sending email notification:', error);
-        // Don't throw the error - we don't want to break the main flow if email fails
+        console.error('Error sending email notification:', error.message);
+        if (error.code === 'EAUTH') {
+            console.error('Authentication failed. Please check your email credentials.');
+        } else if (error.code === 'ESOCKET') {
+            console.error('Connection failed. Please check your EMAIL_HOST and EMAIL_PORT settings.');
+        }
+        return false;
     }
 };
 
